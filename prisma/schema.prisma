@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Заказ из чекаута. Цены и остатки пересчитываются на сервере из data.ts.
+model Order {
+  id            Int      @id @default(autoincrement())
+  number        Int      @unique // человеческий номер заказа, проставляется в API
+  customerName  String
+  phone         String
+  city          String   @default("")
+  address       String   @default("")
+  comment       String   @default("")
+  deliveryId    String
+  deliveryTitle String
+  itemsJson     String // JSON: [{ productId, name, size, qty, price }]
+  itemsTotal    Int
+  deliveryPrice Int // 0 для самовывоза; для СДЭК проставит менеджер при подтверждении
+  grandTotal    Int
+  telegramSent  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+// Подписка на анонс следующего дропа — актив владельца
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("")
+  createdAt DateTime @default(now())
+}
