@@ -1,12 +1,19 @@
 "use client";
 
-// Сбор email на распроданных моделях и в футере дропов.
-// Это актив владельца: список на анонс следующего дропа.
+// «Узнать о поступлении» на распроданной модели: email → RestockRequest.
+// Это не просто удобство — это замер спроса под будущую партию: владелец
+// видит в админке, сколько людей ждут вещь, ещё до того, как шить.
 
 import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 
-export default function SubscribeForm({ source }: { source: string }) {
+export default function RestockForm({
+  productId,
+  productName,
+}: {
+  productId: string;
+  productName: string;
+}) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">(
     "idle"
@@ -22,15 +29,15 @@ export default function SubscribeForm({ source }: { source: string }) {
     }
     setState("loading");
     try {
-      const res = await fetch("/api/subscribe", {
+      const res = await fetch("/api/restock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source }),
+        body: JSON.stringify({ productId, email }),
       });
-      if (!res.ok) throw new Error();
+      const data = (await res.json()) as { ok: boolean };
+      if (!res.ok || !data.ok) throw new Error();
       setState("done");
-      trackEvent("email_signup");
-      setMessage("Готово! Напишем вам про следующий дроп.");
+      trackEvent("restock_signup");
     } catch {
       setState("error");
       setMessage("Не получилось. Попробуйте ещё раз или напишите в WhatsApp.");
@@ -40,7 +47,8 @@ export default function SubscribeForm({ source }: { source: string }) {
   if (state === "done") {
     return (
       <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-        {message}
+        Записали! Напишем на почту, когда «{productName}» вернётся в одном из
+        следующих дропов.
       </p>
     );
   }
@@ -48,7 +56,7 @@ export default function SubscribeForm({ source }: { source: string }) {
   return (
     <form onSubmit={submit} className="space-y-2">
       <label className="text-sm font-medium text-zinc-700">
-        Узнать о следующем дропе
+        Узнать о поступлении
       </label>
       <div className="flex gap-2">
         <input
@@ -63,7 +71,7 @@ export default function SubscribeForm({ source }: { source: string }) {
           disabled={state === "loading"}
           className="shrink-0 rounded-xl border border-zinc-900 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white disabled:opacity-60"
         >
-          {state === "loading" ? "..." : "Отправить"}
+          {state === "loading" ? "..." : "Записаться"}
         </button>
       </div>
       {state === "error" && <p className="text-sm text-red-600">{message}</p>}

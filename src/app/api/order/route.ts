@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 import { getProduct, stockOfSize, DELIVERY_OPTIONS } from "@/lib/order-data";
+import { applyPromo } from "@/lib/promo";
 
 const bodySchema = z.object({
   customer: z.object({
@@ -21,6 +22,7 @@ const bodySchema = z.object({
     comment: z.string().trim().max(500).default(""),
   }),
   deliveryId: z.enum(["pickup", "courier", "cdek"]),
+  promoCode: z.string().trim().max(40).default(""),
   items: z
     .array(
       z.object({
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  const { customer, deliveryId, items } = parsed.data;
+  const { customer, deliveryId, items, promoCode } = parsed.data;
   const delivery = DELIVERY_OPTIONS.find((d) => d.id === deliveryId)!;
 
   // Пересчёт на сервере + ограничение по остаткам
@@ -92,7 +94,11 @@ export async function POST(req: NextRequest) {
 
   const itemsTotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const deliveryPrice = delivery.price ?? 0;
-  const grandTotal = itemsTotal + deliveryPrice;
+
+  // Промокод пересчитываем на сервере — клиенту в скидках не доверяем
+  const promo = applyPromo(promoCode, itemsTotal, delivery.price);
+  const discount = promo.itemsDiscount + promo.deliveryDiscount;
+  const grandTotal = itemsTotal - promo.itemsDiscount + (deliveryPrice - promo.deliveryDiscount);
 
   const db = await loadDb();
 
@@ -117,6 +123,8 @@ export async function POST(req: NextRequest) {
             itemsJson: JSON.stringify(lines),
             itemsTotal,
             deliveryPrice,
+            discount,
+            promoCode: promo.ok ? (promo.code ?? "") : "",
             grandTotal,
           },
         });
@@ -139,6 +147,8 @@ export async function POST(req: NextRequest) {
         ...lines.map(
           (l) => `• ${l.name} (${l.size}) × ${l.qty} — ${l.price * l.qty} ₽`
         ),
+        promo.ok &&
+          `Промокод ${promo.code} (${promo.title}) — скидка ${discount.toLocaleString("ru-RU")} ₽`,
         `Доставка: ${delivery.title}${deliveryPrice ? ` — ${deliveryPrice} ₽` : ""}`,
         `${customer.name}, ${customer.phone}`,
         customer.city && `Город: ${customer.city}`,

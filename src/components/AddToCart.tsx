@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import type { Product, Size } from "@/lib/data";
 import { stockOfSize, totalStock } from "@/lib/data";
-import SubscribeForm from "./SubscribeForm";
+import { trackEvent } from "@/lib/analytics";
+import RestockForm from "./RestockForm";
 
 export default function AddToCart({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -35,6 +36,7 @@ export default function AddToCart({ product }: { product: Product }) {
       { productId: product.id, size, price: product.price },
       stockOfSize(product, size)
     );
+    trackEvent("add_to_cart");
     setAdded(true);
     setTimeout(() => setAdded(false), 2500);
   }
@@ -163,7 +165,9 @@ export default function AddToCart({ product }: { product: Product }) {
         </Link>
       )}
 
-      {soldOut && <SubscribeForm source={`soldout:${product.id}`} />}
+      {soldOut && (
+        <RestockForm productId={product.id} productName={product.name} />
+      )}
     </section>
   );
 }

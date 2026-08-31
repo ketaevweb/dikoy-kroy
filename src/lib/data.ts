@@ -15,7 +15,7 @@ export type Drop = {
   name: string; // «Drop 04: Дикая природа»
   description: string;
   releasedAt: string; // ISO
-  status: "current" | "archive";
+  status: "current" | "archive" | "upcoming";
 };
 
 export type Category =
@@ -70,6 +70,14 @@ const SWEATSHIRT_CARE =
   "Стирка 30° наизнанку, без агрессивного отжима — принт и начёс живут дольше";
 
 export const drops: Drop[] = [
+  {
+    id: "drop-05",
+    name: "Drop 05: Северное сияние",
+    description:
+      "Готовим холодную капсулу: глубокие синие, зелёные и фиолетовые градиенты на плотном футере. Состав покажем здесь ближе к релизу — подпишитесь, чтобы увидеть первым.",
+    releasedAt: "2026-10-15T12:00:00+05:00",
+    status: "upcoming",
+  },
   {
     id: "drop-04",
     name: "Drop 04: Дикая природа",
@@ -452,6 +460,30 @@ export function stockOfSize(p: Product, size: Size): number {
 
 export function currentDrop(): Drop {
   return drops.find((d) => d.status === "current") ?? drops[0];
+}
+
+export function nextUpcomingDrop(): Drop | undefined {
+  const now = Date.now();
+  return drops.find(
+    (d) => d.status === "upcoming" && new Date(d.releasedAt).getTime() > now
+  );
+}
+
+// «С этим часто берут»: без ML — сначала та же категория, затем тот же дроп,
+// затем остальное. На реальных заказах можно заменить на ко-покупки из Order.
+export function relatedProducts(p: Product, take = 3): Product[] {
+  const sameCategory = products.filter(
+    (x) => x.id !== p.id && x.category === p.category
+  );
+  const sameDrop = products.filter(
+    (x) =>
+      x.id !== p.id && x.dropId === p.dropId && x.category !== p.category
+  );
+  const rest = products.filter(
+    (x) =>
+      x.id !== p.id && x.dropId !== p.dropId && x.category !== p.category
+  );
+  return [...sameCategory, ...sameDrop, ...rest].slice(0, take);
 }
 
 export const BRAND = {

@@ -3,12 +3,14 @@
 // Чекаут v2: без мерок — поля доставки. Оплата — уровень 1 (предоплата по СБП),
 // интеграция ЮKassa — отдельная итерация после запуска.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 import { getProduct, BRAND } from "@/lib/data";
 import { DELIVERY_OPTIONS } from "@/lib/order-data";
+import { trackEvent } from "@/lib/analytics";
+import type { PromoResult } from "@/lib/promo";
 import { cn } from "@/lib/utils";
 
 type OrderResult = {
@@ -33,11 +35,61 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<OrderResult | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<PromoResult | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(
+    null
+  );
 
   const delivery = DELIVERY_OPTIONS.find((d) => d.id === deliveryId)!;
+
+  async function applyPromo(code: string) {
+    setPromoLoading(true);
+    setPromoMsg(null);
+    try {
+      const res = await fetch("/api/promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, itemsTotal: total, deliveryId }),
+      });
+      const data = (await res.json()) as PromoResult;
+      if (data.ok) {
+        setPromo(data);
+        setPromoMsg(null);
+      } else {
+        setPromo(null);
+        setPromoMsg({
+          text: data.note ?? "Промокод не найден",
+          ok: false,
+        });
+      }
+    } catch {
+      setPromoMsg({ text: "Не удалось проверить промокод", ok: false });
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  // Промокод на доставку зависит от способа — пересчитываем при смене
+  useEffect(() => {
+    if (promo?.ok && promo.code) {
+      applyPromo(promo.code);
+    }
+  }, [deliveryId]);
+
+  // Цели аналитики: начали оформление; после успеха — покупка
+  useEffect(() => {
+    trackEvent("begin_checkout");
+  }, []);
+  useEffect(() => {
+    if (result?.ok && result.orderNumber) trackEvent("purchase_complete");
+  }, [result]);
+  const itemsDiscount = promo?.ok ? promo.itemsDiscount : 0;
+  const deliveryDiscount = promo?.ok ? promo.deliveryDiscount : 0;
   const grandTotal = useMemo(
-    () => total + (delivery.price ?? 0),
-    [total, delivery.price]
+    () => total - itemsDiscount + ((delivery.price ?? 0) - deliveryDiscount),
+    [total, delivery.price, itemsDiscount, deliveryDiscount]
   );
 
   if (!hydrated) {
@@ -126,6 +178,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: form,
           deliveryId,
+          promoCode: promo?.ok ? (promo.code ?? "") : "",
           items: items.map((i) => ({
             productId: i.productId,
             size: i.size,
@@ -314,15 +367,78 @@ export default function CheckoutPage() {
               );
             })}
           </ul>
+          <div className="mt-4 border-t border-zinc-200 pt-4">
+            {promo?.ok ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-bold text-emerald-900">
+                    {promo.code}
+                  </p>
+                  <p className="text-xs text-emerald-700">
+                    {promo.title}
+                    {promo.note ? ` · ${promo.note}` : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromo(null);
+                    setPromoInput("");
+                  }}
+                  className="text-xs text-emerald-700 underline underline-offset-2 hover:text-emerald-900"
+                >
+                  убрать
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <input
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    placeholder="Промокод"
+                    className="w-full rounded-xl border border-zinc-300 px-4 py-2.5 text-sm uppercase tracking-wide outline-none transition-colors focus:border-zinc-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => applyPromo(promoInput)}
+                    disabled={promoLoading || promoInput.trim().length === 0}
+                    className="shrink-0 rounded-xl border border-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white disabled:opacity-40"
+                  >
+                    {promoLoading ? "..." : "Применить"}
+                  </button>
+                </div>
+                {promoMsg && (
+                  <p
+                    className={cn(
+                      "mt-2 text-xs",
+                      promoMsg.ok ? "text-emerald-700" : "text-red-600"
+                    )}
+                  >
+                    {promoMsg.text}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="mt-4 space-y-1.5 border-t border-zinc-200 pt-4 text-sm">
             <div className="flex justify-between text-zinc-600">
               <span>Товары</span>
               <span>{total.toLocaleString("ru-RU")} ₽</span>
             </div>
+            {itemsDiscount > 0 && (
+              <div className="flex justify-between text-emerald-700">
+                <span>Скидка по промокоду</span>
+                <span>−{itemsDiscount.toLocaleString("ru-RU")} ₽</span>
+              </div>
+            )}
             <div className="flex justify-between text-zinc-600">
               <span>{delivery.title}</span>
               <span>
-                {delivery.price === null ? "—" : `${delivery.price} ₽`}
+                {delivery.price === null
+                  ? "—"
+                  : `${((delivery.price ?? 0) - deliveryDiscount).toLocaleString("ru-RU")} ₽`}
               </span>
             </div>
             <div className="flex justify-between pt-2 text-base font-bold">

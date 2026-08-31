@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CATEGORIES, productsByCategory, type Category } from "@/lib/data";
+import { categorySeo } from "@/lib/seo";
 import ProductCard from "@/components/ProductCard";
 
 export function generateStaticParams() {
@@ -16,7 +17,13 @@ export async function generateMetadata({
   const { category } = await params;
   const cat = CATEGORIES.find((c) => c.slug === category);
   if (!cat) return { title: "Категория не найдена" };
-  return { title: cat.title };
+  const seo = categorySeo(category);
+  if (!seo) return { title: cat.title };
+  return {
+    title: { absolute: seo.title },
+    description: seo.description,
+    openGraph: { title: seo.title, description: seo.description },
+  };
 }
 
 export default async function CategoryPage({
@@ -27,6 +34,7 @@ export default async function CategoryPage({
   const { category } = await params;
   const cat = CATEGORIES.find((c) => c.slug === category);
   if (!cat) notFound();
+  const seo = categorySeo(category);
 
   const items = productsByCategory(cat.slug as Category);
 
@@ -43,6 +51,12 @@ export default async function CategoryPage({
       <h1 className="mt-6 font-display text-2xl font-bold uppercase tracking-tight sm:text-3xl">
         {cat.title}
       </h1>
+
+      {seo && (
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-zinc-600">
+          {seo.intro}
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {CATEGORIES.filter((c) => c.slug !== cat.slug).map((c) => (

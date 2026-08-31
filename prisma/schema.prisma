@@ -21,6 +21,8 @@ model Order {
   itemsJson     String // JSON: [{ productId, name, size, qty, price }]
   itemsTotal    Int
   deliveryPrice Int // 0 для самовывоза; для СДЭК проставит менеджер при подтверждении
+  discount      Int      @default(0) // скидка промокода: товары + доставка
+  promoCode     String   @default("") // применённый промокод, "" = без промокода
   grandTotal    Int
   telegramSent  Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -31,5 +33,25 @@ model Subscriber {
   id        String   @id @default(cuid())
   email     String   @unique
   source    String   @default("")
+  createdAt DateTime @default(now())
+}
+
+// «Узнать о поступлении» на распроданной модели — спрос под будущую партию
+model RestockRequest {
+  id        String   @id @default(cuid())
+  productId String
+  email     String
+  createdAt DateTime @default(now())
+  notified  Boolean  @default(false) // отметка после рассылки при рестоке
+
+  @@unique([productId, email])
+}
+
+// Внутренние события воронки (product_view, add_to_cart, ...) для админки.
+// На serverless пишутся best-effort — реальная аналитика в Яндекс Метрике.
+model Event {
+  id        String   @id @default(cuid())
+  name      String
+  path      String   @default("")
   createdAt DateTime @default(now())
 }

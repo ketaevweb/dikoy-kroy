@@ -5,11 +5,14 @@ import {
   products,
   getProduct,
   getDrop,
+  relatedProducts,
   CATEGORIES,
   totalStock,
 } from "@/lib/data";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCart from "@/components/AddToCart";
+import ProductCard from "@/components/ProductCard";
+import ProductViewTracker from "@/components/ProductViewTracker";
 
 export function generateStaticParams() {
   return products.map((p) => ({ id: p.id }));
@@ -41,9 +44,11 @@ export default async function ProductPage({
   const drop = getDrop(product.dropId);
   const cat = CATEGORIES.find((c) => c.slug === product.category);
   const stock = totalStock(product);
+  const related = relatedProducts(product, 3);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
+      <ProductViewTracker productId={product.id} />
       <nav className="text-sm text-zinc-500">
         <Link href="/catalog" className="hover:text-zinc-900">
           Каталог
@@ -160,6 +165,20 @@ export default async function ProductPage({
           </section>
         </div>
       </div>
+
+      {/* «С этим часто берут» — рекомендации: та же категория, потом тот же дроп */}
+      {related.length > 0 && (
+        <section className="mt-14 border-t border-zinc-200 pt-10">
+          <h2 className="font-display text-xl font-bold uppercase tracking-tight sm:text-2xl">
+            С этим часто берут
+          </h2>
+          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

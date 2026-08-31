@@ -4,14 +4,18 @@ import {
   currentDrop,
   productsByDrop,
   getProduct,
+  nextUpcomingDrop,
   BRAND,
 } from "@/lib/data";
 import ProductCard from "@/components/ProductCard";
+import DropCountdown from "@/components/DropCountdown";
+import SubscribeForm from "@/components/SubscribeForm";
 
 export default function Home() {
   const drop = currentDrop();
   const items = productsByDrop(drop.id);
   const example = getProduct("kolibri");
+  const upcoming = nextUpcomingDrop();
 
   return (
     <div>
@@ -79,6 +83,40 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Следующий дроп: таймер + подписка — создаём ожидание */}
+      {upcoming && (
+        <section className="border-b border-zinc-200">
+          <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-12 lg:grid-cols-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-600">
+                Следующий дроп ·{" "}
+                {new Date(upcoming.releasedAt).toLocaleDateString("ru-RU", {
+                  day: "numeric",
+                  month: "long",
+                })}
+              </p>
+              <h2 className="mt-3 font-display text-2xl font-bold uppercase tracking-tight sm:text-3xl">
+                {upcoming.name}
+              </h2>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-600">
+                {upcoming.description}
+              </p>
+              <p className="mt-4 max-w-md text-xs leading-relaxed text-zinc-400">
+                Как и раньше — партии по 15–20 штук на размер. Кто подписан,
+                узнаёт первым: прошлый дроп половину размеров разобрали за
+                первые два дня.
+              </p>
+            </div>
+            <div className="space-y-5">
+              <DropCountdown targetDate={upcoming.releasedAt} />
+              <div className="max-w-md">
+                <SubscribeForm source={`drop-announce:${upcoming.id}`} />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Товары текущего дропа */}
       <section className="mx-auto max-w-6xl px-4 py-12">
