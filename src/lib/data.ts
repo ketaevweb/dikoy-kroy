@@ -490,9 +490,9 @@ export const BRAND = {
   name: "Дикий крой",
   tagline: "Спортивная одежда малыми партиями",
   city: "Пермь",
-  phone: "+7 902 123-45-67",
-  whatsapp: "https://wa.me/79021234567",
+  phone: "+7 902 471-23-05",
+  whatsapp: "https://wa.me/79024712305",
   telegram: "https://t.me/dikyikroy",
   email: "hello@dikyikroy.ru",
-  sbp: "+7 902 123-45-67",
+  sbp: "+7 902 471-23-05",
 };
