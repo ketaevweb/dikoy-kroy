@@ -21,6 +21,9 @@ const unbounded = Unbounded({
 });
 
 export const metadata: Metadata = {
+  // Демо-портфолио: не индексируем поисковиками (ревью P1.2),
+  // следуя по ссылкам — они ведут на kataevweb.ru
+  robots: { index: false, follow: true },
   // Концепт магазина для портфолио — честная маркировка в title/description:
   // пришедший из поиска не должен принять демо за работающий магазин.
   title: {

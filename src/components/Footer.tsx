@@ -42,7 +42,17 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-zinc-200 py-4 text-center text-xs text-zinc-400">
-        © {new Date().getFullYear()} {BRAND.name}. Все модели выпускаются ограниченными партиями.
+        © {new Date().getFullYear()} {BRAND.name}. Все модели выпускаются
+        ограниченными партиями. Демо-проект портфолио веб-разработчика —{" "}
+        <a
+          href="https://kataevweb.ru"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 transition-colors hover:text-zinc-600"
+        >
+          kataevweb.ru
+        </a>
+        : бренд, товары, контакты и цены — вымышленные.
       </div>
     </footer>
   );
