@@ -51,36 +51,8 @@ export default function RootLayout({
           <PopupSubscribe />
         </CartProvider>
         <Toaster />
-      {/* Плашка демо-проекта: ведёт на портфолио kataevweb.ru */}
-      <a
-        href="https://kataevweb.ru"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          position: "fixed",
-          bottom: "16px",
-          right: "16px",
-          zIndex: 9999,
-          display: "inline-flex",
-          alignItems: "center",
-          padding: "8px 14px",
-          borderRadius: "9999px",
-          background: "rgba(9,9,11,0.85)",
-          color: "#34d399",
-          fontSize: "12px",
-          fontWeight: 600,
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          textDecoration: "none",
-          border: "1px solid rgba(52,211,153,0.35)",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        демо → kataevweb.ru
-      </a>
-      </body>
-</body>
       <DemoBadge />
+</body>
       {/* Яндекс Метрика — счётчик ставится только при заданном NEXT_PUBLIC_YM_ID */}
       {process.env.NEXT_PUBLIC_YM_ID && (
         <Script id="ym-counter" strategy="afterInteractive">
