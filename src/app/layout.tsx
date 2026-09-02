@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Manrope, Unbounded } from "next/font/google";
 import "./globals.css";
+import { DemoBadge } from "@/components/site/DemoBadge";
+
 import { Toaster } from "@/components/ui/toaster";
 import { CartProvider } from "@/lib/cart-context";
 import Header from "@/components/Header";
@@ -50,6 +52,7 @@ export default function RootLayout({
         </CartProvider>
         <Toaster />
       </body>
+      <DemoBadge />
       {/* Яндекс Метрика — счётчик ставится только при заданном NEXT_PUBLIC_YM_ID */}
       {process.env.NEXT_PUBLIC_YM_ID && (
         <Script id="ym-counter" strategy="afterInteractive">
